@@ -149,36 +149,7 @@ aside {
   gap: 12px;
 }
 
-.sheet-status-badge {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  background: var(--gl);
-  border: 1px solid var(--ln);
-  border-radius: 12px;
-  font-size: 12.5px;
-  color: var(--mu);
-  cursor: pointer;
-  transition: 0.2s;
-  backdrop-filter: blur(10px);
-}
-.sheet-status-badge:hover {
-  background: var(--gl-hover);
-  border-color: rgba(255, 255, 255, 0.25);
-}
-.sheet-status-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.sheet-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--emerald);
-  box-shadow: 0 0 10px var(--emerald);
-}
+
 
 .by {
   font-size: 13px;
@@ -620,52 +591,6 @@ input:focus, textarea:focus {
   box-shadow: 0 0 0 10px rgba(255, 90, 31, 0.16), 0 18px 50px rgba(255, 90, 31, 0.45);
 }
 
-/* Spinner */
-.spin {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border: 2.5px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: spinAnim 0.7s linear infinite;
-}
-@keyframes spinAnim { to { transform: rotate(360deg); } }
-
-/* Settings Modal */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(4, 6, 12, 0.85);
-  backdrop-filter: blur(16px);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-.modal-backdrop.open { display: flex; }
-.modal-card {
-  width: 100%;
-  max-width: 560px;
-  background: #0b0f1d;
-  border: 1px solid var(--ln);
-  border-radius: 24px;
-  padding: 32px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
-}
-.modal-card h2 {
-  font: 700 24px "Bricolage Grotesque", sans-serif;
-  color: #fff;
-  margin-bottom: 10px;
-}
-.modal-card p {
-  color: var(--mu);
-  font-size: 14.5px;
-  line-height: 1.6;
-  margin-bottom: 20px;
-}
-
 /* Responsive */
 @media (max-width: 860px) {
   body { flex-direction: column; }
@@ -705,13 +630,6 @@ input:focus, textarea:focus {
   </div>
 
   <div class="aside-bottom">
-    <div class="sheet-status-badge" id="openSheetModal" title="Click to view Google Sheet integration">
-      <div class="sheet-status-left">
-        <span class="sheet-dot" id="sheetDot"></span>
-        <span id="sheetStatusLabel">Google Sheet Linked</span>
-      </div>
-      <span style="opacity: 0.6">⚙️</span>
-    </div>
     <div class="by">Crafted by MVP Daddy Labs</div>
   </div>
 </aside>
@@ -730,18 +648,7 @@ input:focus, textarea:focus {
   <div id="stage"></div>
 </main>
 
-<!-- GOOGLE SHEETS MODAL -->
-<div class="modal-backdrop" id="sheetModal">
-  <div class="modal-card">
-    <h2>Google Sheets Sync Webhook</h2>
-    <p>Your responses are directly configured to post to the MVP Daddy master sheet:</p>
-    <input id="modalUrlInput" style="margin-bottom: 20px" spellcheck="false">
-    <div style="display: flex; justify-content: flex-end; gap: 12px">
-      <button class="btn g" id="closeSheetModal">Close</button>
-      <button class="btn" id="saveSheetUrl">Save & Verify</button>
-    </div>
-  </div>
-</div>
+
 
 <script>
 // Active Verified Google Sheet Webhook URL
@@ -784,7 +691,6 @@ const Q = [
 
 const A = JSON.parse(localStorage.getItem("pe_answers_backup") || "{}");
 let i = -1;
-let syncStatus = { synced: false, inProgress: false, error: null };
 
 const $ = e => document.querySelector(e);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -792,19 +698,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "
 $("#steps").innerHTML = SEC.map((s, k) => `<div id="st${k}">${s}</div>`).join("");
 $("#seg").innerHTML = Q.map(() => "<i></i>").join("");
 
-function updateSheetIndicator() {
-  const dot = $("#sheetDot");
-  const lbl = $("#sheetStatusLabel");
-  if (GOOGLE_SHEET_URL) {
-    dot.className = "sheet-dot";
-    lbl.textContent = "Google Sheet Linked";
-  } else {
-    dot.className = "sheet-dot";
-    dot.style.background = "#f59e0b";
-    lbl.textContent = "Configure Sheet";
-  }
-}
-updateSheetIndicator();
+
 
 const go = n => { i = n; draw(); };
 
@@ -851,14 +745,9 @@ function buildFormattedPayload() {
   return payload;
 }
 
-// Direct Sync with Google Sheets
+// Silent background submission
 async function submitToGoogleSheets() {
-  syncStatus.inProgress = true;
-  syncStatus.error = null;
-  draw();
-
   const payload = buildFormattedPayload();
-
   try {
     await fetch(GOOGLE_SHEET_URL, {
       method: "POST",
@@ -866,17 +755,10 @@ async function submitToGoogleSheets() {
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload)
     });
-
-    syncStatus.inProgress = false;
-    syncStatus.synced = true;
     confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
   } catch (err) {
-    console.error("Sheet sync error:", err);
-    syncStatus.inProgress = false;
-    syncStatus.synced = false;
-    syncStatus.error = "Syncing queued. Saved safely to browser cache.";
+    console.error("Background submission error:", err);
   }
-  draw();
 }
 
 function draw() {
@@ -895,11 +777,11 @@ function draw() {
     h = `
       <div class="s">
         <h1>Let's shape how US towing operators see Pristine.</h1>
-        <p class="sub">Hi Aryan. Thirteen quick questions, one at a time. Your answers automatically synchronize directly to the MVP Daddy strategy sheet so we can craft the three custom design concepts, copy systems and booking architecture.</p>
+        <p class="sub">Hi Aryan. Thirteen quick questions, one at a time. Your answers go directly to the MVP Daddy team so we can craft the three custom design concepts, copy systems and booking architecture.</p>
         <div class="pills">
           <span>13 questions</span>
           <span>About 8 minutes</span>
-          <span>Auto-saved to Google Sheets</span>
+          <span>Confidential & secure</span>
         </div>
         <div class="nav">
           <button class="btn" onclick="go(0)">Start Questionnaire</button>
@@ -908,7 +790,7 @@ function draw() {
       </div>
     `;
   }
-  // 2. Final Screen (Customized with Automated Sync Confirmation)
+  // 2. Final Screen
   else if (i >= Q.length) {
     const summaryRows = Q.map((x, k) => {
       let v = A[k];
@@ -917,35 +799,13 @@ function draw() {
       return v ? `<p><b>${esc(x.q)}</b>${esc(v)}</p>` : "";
     }).join("");
 
-    let badge = "";
-    if (syncStatus.inProgress) {
-      badge = `
-        <div class="sync-badge pending">
-          <span class="spin"></span>
-          <div><b>Synchronizing with Google Sheet...</b> Transmitting data to MVP Daddy centralized intake.</div>
-        </div>
-      `;
-    } else {
-      badge = `
-        <div class="sync-badge done">
-          <span style="font-size:22px">✓</span>
-          <div><b>Successfully Synchronized to Google Sheets</b> Your responses are recorded in the master sheet.</div>
-        </div>
-      `;
-    }
-
     h = `
       <div class="s">
         <div class="ok">✓</div>
-        ${badge}
         <h1>All set, Aryan!</h1>
-        <p class="sub">Your answers are synced directly with the MVP Daddy team. We have everything we need and are already underway crafting the 3 visual directions and copy systems.</p>
+        <p class="sub">Your answers are with the MVP Daddy team. We have everything we need and are already underway crafting the 3 visual directions and copy systems for Pristine Efficiency.</p>
         <div class="sum">${summaryRows || "<p>No answers entered.</p>"}</div>
         <div class="nav">
-          <button class="btn" id="resyncBtn" onclick="submitToGoogleSheets()">
-            ${syncStatus.synced ? "✓ Re-Sync to Sheet" : "Sync Now to Google Sheet"}
-          </button>
-          <button class="btn g" id="csvBtn">Export CSV Backup</button>
           <button class="lk" onclick="go(0)">Review Answers</button>
         </div>
       </div>
@@ -1078,54 +938,13 @@ function draw() {
     };
   }
 
-  const csvBtn = $("#csvBtn");
-  if (csvBtn) {
-    csvBtn.onclick = () => {
-      const payload = buildFormattedPayload();
-      let csv = "Question,Answer\n";
-      Object.keys(payload).forEach(k => {
-        csv += `"${k.replace(/"/g, '""')}","${String(payload[k]).replace(/"/g, '""')}"\n`;
-      });
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `pristine_efficiency_answers_${new Date().toISOString().slice(0, 10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    };
-  }
-
   const f0 = st.querySelector("input, textarea");
   if (f0 && !matchMedia("(max-width:860px)").matches) f0.focus();
 }
 
-// Modal handling
-function openModal() {
-  $("#modalUrlInput").value = GOOGLE_SHEET_URL;
-  $("#sheetModal").classList.add("open");
-}
-function closeModal() {
-  $("#sheetModal").classList.remove("open");
-}
-$("#openSheetModal").onclick = openModal;
-$("#closeSheetModal").onclick = closeModal;
-$("#saveSheetUrl").onclick = () => {
-  const url = $("#modalUrlInput").value.trim();
-  if (url) {
-    GOOGLE_SHEET_URL = url;
-    localStorage.setItem(STORAGE_KEY, url);
-    updateSheetIndicator();
-    closeModal();
-    if (i >= Q.length) submitToGoogleSheets();
-  }
-};
-
 // Keyboard listener
 document.addEventListener("keydown", e => {
   if (e.key !== "Enter" || e.shiftKey || ["TEXTAREA", "A", "BUTTON"].includes(e.target.tagName)) return;
-  if ($("#sheetModal").classList.contains("open")) return;
   e.preventDefault();
   i < 0 ? go(0) : i < Q.length && next();
 });
