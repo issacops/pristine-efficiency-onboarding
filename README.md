@@ -1,5 +1,8 @@
 # Pristine Efficiency · Onboarding Questionnaire (by MVP Daddy)
 
+> 🌐 **Live Questionnaire Link:** [https://issacops.github.io/pristine-efficiency-onboarding/](https://issacops.github.io/pristine-efficiency-onboarding/)  
+> 📊 **Connected Google Sheet Webhook:** Active & verified
+
 A sleek, interactive onboarding and strategy questionnaire designed for **Pristine Efficiency** to gather design, copy, and operational requirements from US towing and repossession operators.
 
 ---
